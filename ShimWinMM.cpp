@@ -82,14 +82,14 @@ static void CallOnce(
 // Loads the real winmm.dll, registers an exit handler to unload it, and returns the module handle.
 static HMODULE GetWinmm() {
   static volatile HMODULE hWinmm = NULL;
-  CallOnce([]() {
+  CallOnce([] {
     wchar_t dllPath[MAX_PATH] = L"";
     GetSystemDirectoryW(&dllPath[0], MAX_PATH);
     wcsncat_s(&dllPath[0], MAX_PATH, L"\\winmm.dll", _TRUNCATE);
 
     hWinmm = LoadLibraryW(&dllPath[0]);
     if (hWinmm != NULL) {
-      atexit([]() { FreeLibrary(hWinmm);  hWinmm = NULL; });
+      atexit([] { FreeLibrary(hWinmm);  hWinmm = NULL; });
     }
   });
   return hWinmm;
@@ -102,13 +102,12 @@ static auto* GetFunction(
   const char*  pExport)
 {
   static volatile decltype(Pfn) pfn = nullptr;
-  CallOnce([pExport]() { pfn = reinterpret_cast<decltype(Pfn)>(GetProcAddress(GetWinmm(), pExport)); });
+  CallOnce([pExport] { pfn = reinterpret_cast<decltype(Pfn)>(GetProcAddress(GetWinmm(), pExport)); });
   return pfn;
 }
 
+// ------------------------------------------------ WinMM API wrappers -------------------------------------------------
 
-// =====================================================================================================================
-// WinMM API wrappers
 extern "C" {
 
 EXPORT int WINAPI mciExecute(PCHAR MbString) { return GetFunction<&mciExecute>(__func__)(MbString); }
